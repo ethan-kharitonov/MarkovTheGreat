@@ -1,5 +1,4 @@
 from MarkovChain import MarkovChain
-from State import State
 from typing import List
 from IndividualLocationChain import IndividualLocationChain
 
