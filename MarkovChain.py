@@ -7,4 +7,4 @@ class MarkovChain:
     def transition_probability_indices(self, i, j):
         return None
 
-    
+
