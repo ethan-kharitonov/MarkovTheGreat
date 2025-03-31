@@ -10,7 +10,10 @@ class LocationChain(MarkovChain):
         self.location_chains = location_chains
 
     def transition_probability(self, state1: State, state2: State):
-        return None
+        probability = 1.0
+        for chain in self.location_chains:
+            probability *= chain.transition_probability(state1, state2)
+        return probability
 
     def transition_probability_indices(self, i, j):
-        return None
+        return self.transition_probability(i, j)
