@@ -1,0 +1,214 @@
+\documentclass[12pt]{article}
+\usepackage{amsmath,amssymb,graphicx}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{amsfonts} 
+\usepackage{fancyhdr} 
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{framed}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage[utf8]{inputenc}
+\usepackage{color,soul}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{algpseudocode, algorithm}
+\usepackage{amsmath,amsthm,amssymb, mathtools}
+
+% Define title formatting
+\titleformat{\section}{\large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
+
+% Define header and footer
+\oddsidemargin=-0.2in
+\evensidemargin=.1in
+\textwidth=7in
+\topmargin=-0.4in
+\textheight=9.4in
+\parskip=.07in
+\parindent=0.4in
+\pagestyle{fancy}
+\fancyhf{}
+% \lhead{Title}
+\rhead{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Begin document
+\begin{document}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\N}{\mathbb{N}}
+\renewcommand{\P}{\mathcal{P}}
+\newcommand{\D}{\mathcal{D}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\Tr}{\text{T}}
+\renewcommand{\L}{\mathcal{L}}
+\newcommand{\A}{\mathcal{A}}
+\newcommand{\sign}{\text{sign}\;}
+\renewcommand{\null}{\text{null}}
+\newcommand{\match}{\text{match}}
+\newcommand{\OPT}{\text{OPT}}
+
+% Title Page
+\begin{titlepage}
+    \centering
+    {\LARGE \bfseries A Hub-Based Stochastic SIR Model for Disease Spread via Individual Movement Patterns\\[1.5em]}
+
+    
+    {\large Max Elinson \& Ethan Kharitonov\\ April 4, 2024}
+    \begin{abstract}
+        In this paper, we present a novel extension of the classical SIR (Susceptible-Infected-Recovered) model that incorporates individual-level movement patterns across shared interaction hubs such as workplaces, schools, and stores. Unlike traditional models that assume uniform mixing or static subpopulations, our approach models each individual’s trajectory as a Markov process over a finite set of locations, with disease transmission occurring locally within each hub. This framework allows us to simulate how specific mobility behaviors, such as frequency of movement, destination preferences, and hub congestion, affect the dynamics of disease spread. We formalize the system as a discrete-time stochastic process, derive transition probabilities for infection and recovery, and analyze the role of movement in shaping epidemic outcomes. Our model builds on prior work in multi-group, metapopulation, and patch-based models, but introduces a more granular and behaviorally realistic representation of contact patterns. This provides a useful tool for evaluating intervention strategies that target movement and interaction, and offers insights into the design of localized public health policies.
+
+
+    \end{abstract}
+\end{titlepage}
+
+% Table of Contents
+\tableofcontents
+\newpage
+
+% Section 1: Introduction
+\section{Background}
+The global healthcare system is a multi-trillion dollar industry, with the healthcare market valued at approximately \$21.22 trillion in 2023, and projected to grow to \$44.76 trillion by 2032 \href{https://www.globenewswire.com/news-release/2024/08/01/2923001/0/en/Healthcare-Market-Size-Worth-US-44-760-73-Billion-By-2032-Continuous-Advancements-in-Biotechnology-Pharmaceuticals-Propels-Growth-Research-by-SNS-Insider.html}{(SNS Insider, 2024)}. Despite this massive infrastructure, infectious diseases remain a significant global threat. According to the Global Burden of Disease Study 2019, infectious syndromes were responsible for 13.7 million deaths in 2019, with nearly 3 million deaths among children under five \href{https://www.thelancet.com/journals/lancet/article/PIIS0140-6736(22)02185-7/fulltext}{(Ikuta et al., 2022)}. Pathogens like tuberculosis, malaria, and HIV/AIDS remain leading causes of death in many regions, particularly low- and middle-income countries.
+
+The COVID-19 pandemic demonstrated the critical importance of disease modeling and public health interventions. A review of global data suggests that quarantine measures—alongside mask-wearing and physical distancing—reduced COVID-19 transmission significantly. One early study showed that quarantine on the Diamond Princess cruise ship prevented an estimated 2,307 additional infections, reducing the disease basic reproduction rate from 14.8 to 1.78 \href{https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7141753/}{(Nussbaumer-Streit et al., 2020)}. Other models estimate that widespread public health interventions during COVID-19 reduced global transmission by nearly 50\% in the early stages of the outbreak \href{https://www.nature.com/articles/s41591-020-0822-7}{(Wu et al., 2020)}.
+
+The traditional SIR model describes the spread of an infectious disease within a closed population. It partitions the population into three mutually exclusive sets, $S$ (susceptible), $I$ (infected), and $R$ (recovered). The model assumes that that the total number of people is some constant $N \in \mathbb{N}$, and that people mix uniformly, i.e., any two people have equal chance of interacting. This leads to the system of ODEs
+\begin{align*}
+    S &= -\frac{\beta}{N}IS\\
+    I &= \frac{\beta}{N}IS - \gamma I\\
+    R &= \gamma I
+\end{align*}
+Here $S, I, R: [0, \infty) \longrightarrow \mathbb{R}_{\geq 0}$, where $t$ represents time and $\beta, \gamma$ are constants specific to the disease we are studying \href{https://documents1.worldbank.org/curated/en/888341625223820901/pdf/An-Introduction-to-Deterministic-Infectious-Disease-Models.pdf}{(World Bank, 2021)}.
+
+Traditional epidemiological models such as the SIR framework assume a well-mixed population where all individuals have an equal probability of interacting. While this provides useful baseline insights, it fails to account for the structured and patterned ways in which people interact in real life. A substantial body of research has addressed this limitation through multi-group and metapopulation models, which divide the population into distinct subgroups or spatial patches, allowing disease to spread both within and between these groups. For instance, multigroup models have been used to explore differential infection rates across demographic or regional strata and to assess the effects of targeted interventions \href{https://www.sciencedirect.com/science/article/abs/pii/S0022519311004760}{(Arino \& van den Driessche, 2011)}, \href{https://pmc.ncbi.nlm.nih.gov/articles/PMC9698251}{(Lloyd-Smith et al., 2005)}. Similarly, metapopulation models have been employed to capture regional spread of disease through travel or migration, particularly during the COVID-19 pandemic \href{https://www.frontiersin.org/journals/physics/articles/10.3389/fphy.2020.00261/full}{(Chowell et al., 2020)}.
+
+Building on these frameworks, we propose a model that takes a more granular approach by simulating individual-level movement between shared hubs—such as schools, workplaces, or stores—and observing how disease propagates through these interaction points. This framework shares key features with multi-patch models, which incorporate location-specific transmission dynamics and directional movement between patches, as well as with spatial interaction models that emphasize local versus long-range contacts based on physical proximity or mobility behavior.
+
+
+
+% Section 2: Mathematical Model
+\section{Defining the Mathematical Model}
+\subsection{Introduction}
+Our model aims to describe disease spread using a modified SIR model on the community level. We will model individuals in a population who will follow certain movement patterns to places such as school, work, or the grocery store, and will interact with other individuals in those places. We will observe the effect of specific movement patterns, and attempt to ascertain predictable model behavior given certain inputs.
+
+Our contributions are twofold. First, we introduce a hub-based SIR model in which individuals move stochastically between locations according to personalized Markov chains, allowing us to simulate realistic interaction dynamics without assuming static population partitions. Second, we explore how different movement patterns—including frequency, destination preference, and interaction density—affect the overall spread of disease. By incorporating both individual behavior and location-specific transmission rates, our model offers a flexible framework for analyzing intervention strategies such as targeted lockdowns, staggered work schedules, or hub-specific policies. This positions our work as a bridge between classical compartmental models and more behaviorally grounded simulations of epidemic dynamics.
+\subsection{Description}
+\subsubsection{Notation}
+Denote the set of people by $\mathcal{N}$ and the set of hubs by $\mathcal{H}$. Assume both are of finite size $N$ and $H$ respectively. Each person $i \in \mathcal{N}$ can be in one of three states, $S$, $I$ or $R$. Let $\mathcal{S} = \{S, I, R\}$. For each individual $i \in \mathcal{N}$ and time $t \in \Z_{+}$,
+\begin{itemize}
+    \item $X_{i}(t) \in \mathcal{S}$: Epidemiological state of individual $i$ at time $t$
+    \item $L_{i}(t) \in \mathcal{H}$: Location (hub) of individual $i$ at time $t$
+    \item $P^{(i)} \in \R^{H \times H}$: Individual-specific transition matrix where $P_{jk}^{(i)}$ is the probability of individual $i$ moving from hub $j$ to hub $k$
+\end{itemize}
+Finally, each hub $h \in \mathcal{H}$ has a a transition rate $\beta_{h} > 0$ and all hubs share a global recovery rate $\gamma > 0$. At time $t \in \Z_{+}$, the entire system is described by
+$$\Phi(t) = (X_{i}(t), L_{i}(t))_{i \in \mathcal{N}}$$
+Denote the set of all possible states the system could be in by $\mathcal{X} = (\mathcal{S} \times \mathcal{H})^{\mathcal{N}}$. Note that $\phi(t) \in \mathcal{X}$. Finally, for each $h \in \mathcal{H}$, we define $S_{h}, I_{h}, R_{h}, N_{h}: \Z_{+} \longrightarrow \R_{\geq 0}$ to be the number of susceptible, infected, recovered and the total number of people respectively in hub $h$ at a given time, More precisely,
+    $$S_{h}(t) = |\{i \in \mathcal{N}: X_{i}(t) = S, L_{i}(t) = h\}|$$
+and $I_{h}, R_{h}$ are analogous and $N_{h} = S_{h} + I_{h} + R_{h}$. A courser view of the system at time $t$ is the vector $(S_{h}, I_{h}, R_{h})_{h \in \mathcal{H}}$. This contains less information than $\Phi(t)$.
+\subsubsection{Dynamics}
+\textbf{Within a hub}: During $[t, t + 1)$, each hub will act as its own population. We make make three assumptions.
+\begin{enumerate}
+    \item A susceptible person can become infected but not recovered within one time step.
+    \item A recovered person will stay recovered throughout the time step.
+    \item We make the same assumptions underlying the standard SIR model.
+\end{enumerate}
+Let us explain what we mean by assumption (3). We assume that the a susceptible individual instantaneous risk of infection in a given hub $h$ during time $[t, t + 1)$ is proportional to
+$$\lambda_{h}(t) = \beta_{h}I_{h}(t)/N_{h}(t)$$
+This implies that a susceptible person chance of being infected over a time interval $[t, t + \delta]$ is the same as it is over any other interval of length $\delta$. Naturally, this will lead to a Poisson process $\lambda_{h}(t)$. It is not difficult to show that the probability that a susceptible person is infected is at hub $h$ during this time is,
+$$1 - \exp(-\lambda_{h}(t))$$
+Similarly, we assume that that recovery follows a Poisson process with a constant recovery rate $\gamma$. We can show that the probability an infected individual recovers during a time interval of length 1  is given by
+$$1 - \exp(-\gamma)$$
+\textbf{Moving between hubs}: At the end of the time interval $[t, t + 1]$, each individual $i$ at hub $j$ moves to a hub $k$ with probability $P_{jk}^{(i)}$. Symbolicaly,
+$$\mathbb{P}(L_{i}(t + 1) = k \mid L_{t} = j) = P_{jk}^{(i)}$$
+For this to make sense, we enforce that $\sum_{k \in \mathcal{H}}P^{(i)}_{jk} = 1$ for all $j \in \mathcal{H}$. That is, the functions $L_{i}(0), L_{i}(1), \dots$ form a Markov chain with transition matrix $P^{(i)}$.\\\\
+\textbf{State transitions}: Suppose that at time $t$, the state of each individual $i \in \mathcal{H}$ is given by $Y(t) = (X_{i}(t), L_{i}(t))$. The state of the entire system at time $t$ is then given by
+$$Y(t) = (Y_{1}(t), \dots, Y_{N}(t)) \in \mathcal{X}$$
+The next state is given with the following probabilities:
+\begin{itemize}
+    \item If $x = S$, then 
+    $$\mathbb{P}\bigl(Y_i(t+1) = (I,k) \mid Y_i(t) = (S,j)\bigr) = (1 - \exp(-\lambda_{h}(t)))P_{jk}^{(i)}$$
+    \item If $x = I$, then 
+    $$\mathbb{P}\bigl(Y_i(t+1) = (R,k) \mid Y_i(t) = (I,h)\bigr) = (1 - \exp(-\gamma)) P_{hk}^{(i)}$$
+    \item If $x = R$, then 
+    $$\mathbb{P}\bigl(Y_i(t+1) = (R,k) \mid Y_i(t) = (R,h)\bigr) =  P_{hk}^{(i)}$$
+\end{itemize}
+All probabilities that were not mentioned above are defined as the complement of the ones that are listed above. Assuming that people get infected, recover and move around with independent probabilities, we have
+$$\mathbb{P}(Y(t + 1) = y \mid Y(t) = x) = \prod_{i \in \mathcal{N}}\mathbb{P}(Y_{i}(t + 1) = y_{i} \mid Y_{i}(t) = x_{i})$$
+This defines a Markov transition matrix on the state space $\mathcal{X}$.
+
+\section{Analysis of the Mathematical Model}
+The goal of our model is to, given the various parameter inputs, predict how many individuals in the population will become infected over the course of the simulation. In other words, at the end of the simulation, how many people will still be Susceptible, and how many will have been Infected over the course of the simulation and are now Recovered.
+
+We identify three cases that allow our model to be analyzed with increasing precision, starting with a general full-run simulation, and moving to two more specific cases which eventually lead to a fully closed-form analytical expression that answers our goal.
+
+\subsection{General Case}
+In the most general case, individuals follow arbitrary movement patterns governed by personalized Markov chains. That is, each person $i \in N$ has their own transition matrix $P^{(i)} \in \mathbb{R}^{H \times H}$ dictating the probabilities of moving between hubs over discrete time steps. 
+
+Infection occurs probabilistically at each hub based on the local prevalence of infection during each time window $[t, t+1)$. Since the infection process is stochastic and hubs can vary dynamically in population and composition at each time step, a closed-form solution is not feasible.
+
+The system state evolves according to a high-dimensional Markov process over the joint space $X = (S \times H)^N$. The number of possible states grows exponentially with $N$, and since infection and recovery are probabilistic events, the outcome of any given simulation run is a sample path. As such, predictions in this regime are obtained via Monte Carlo simulations across multiple stochastic realizations, producing statistical estimates of the expected number of infected and recovered individuals.
+
+\subsection{Symmetrical Paths}
+In this case, we assume that each individual has their own movement pattern across hubs, but that movement is symmetric: the probability of moving from hub $j$ to hub $k$ is the same as moving from $k$ to $j$. That is, for each individual $i \in N$, their transition matrix $P^{(i)} \in \mathbb{R}^{H \times H}$ satisfies
+\[
+P^{(i)}_{jk} = P^{(i)}_{kj} \quad \text{for all } j, k \in H.
+\]
+
+This assumption does not require that all individuals share the same transition matrix, but rather that each person moves according to a reversible Markov chain, where movement in the system exhibits a form of local balance. These symmetry constraints enable several mathematical simplifications.
+
+First, since each $P^{(i)}$ is a symmetric stochastic matrix, it is diagonalizable with real eigenvalues and an orthonormal eigenbasis. The largest eigenvalue of each $P^{(i)}$ is 1, and the corresponding eigenvector describes the stationary distribution of locations for individual $i$. Under the assumption that individuals have been moving according to their Markov chains for a long time, we can approximate the probability that person $i$ is at hub $h$ at time $t$ by their stationary distribution \( \pi^{(i)} \).
+
+By summing over all individuals, we can approximate the expected population at each hub $h$ as
+\[
+\mathbb{E}[N_h(t)] \approx \sum_{i \in N} \pi^{(i)}_h,
+\]
+and similarly estimate expected values for \( S_h(t) \), \( I_h(t) \), and \( R_h(t) \) based on the states of individuals and their location probabilities. These approximations reduce the dimensionality of the model and allow us to analyze expected infection dynamics over time without simulating the full stochastic system.
+
+Moreover, under symmetric movement, interactions between hubs become more regular, and infection dynamics exhibit more predictable behavior. This opens the door for eigenvalue-based analysis, such as bounding the rate of spread using the spectral gap (i.e., the difference between the largest and second-largest eigenvalues of \( P^{(i)} \)). The spectral gap quantifies the mixing time of each individual’s location process: how quickly their location distribution approaches the steady state. Faster mixing implies quicker convergence to spatial homogeneity, which in turn enables accurate estimation of macro-level quantities like the basic reproduction number \( R_0 \) in this structured setting.
+
+This regime provides a useful middle ground: it preserves heterogeneity in individual behavior while allowing population-level estimates through linear algebraic techniques.
+
+
+\subsection{Circular Paths}
+We further simplify the system by assuming that individuals follow deterministic circular movement patterns through a fixed sequence of hubs. For example, a person might go from home to work to the grocery store and then return to home, with this cycle repeating daily. 
+
+Formally, let each individual follow a deterministic loop of length $d$, visiting hubs in order $h_1 \rightarrow h_2 \rightarrow \cdots \rightarrow h_d \rightarrow h_1$. Each time step, they advance one step in the cycle. In this regime, the population in each hub at time $t$ becomes periodic and predictable.
+
+Let $M(t) \in \mathbb{R}^{H}$ denote the number of individuals at each hub at time $t$. Since movement is deterministic, $M(t)$ is a periodic function with period $d$. This periodicity allows us to express the dynamics as a discrete-time dynamical system over a reduced deterministic state space.
+
+Moreover, the interactions in each hub become effectively decoupled and predictable over time, enabling us to write the infection dynamics at each hub as:
+\[
+S_h(t+1) = S_h(t) \cdot \exp\left(-\frac{\beta_h I_h(t)}{N_h(t)}\right)
+\]
+\[
+I_h(t+1) = S_h(t) \cdot \left(1 - \exp\left(-\frac{\beta_h I_h(t)}{N_h(t)}\right)\right) + I_h(t) \cdot \exp(-\gamma)
+\]
+\[
+R_h(t+1) = R_h(t) + I_h(t) \cdot \left(1 - \exp(-\gamma)\right)
+\]
+
+Since $S_h(t), I_h(t), R_h(t)$ evolve deterministically in this case, and $N_h(t)$ is known from the fixed schedules, we can explicitly solve for $S_h(t), I_h(t), R_h(t)$ over time. In fact, by unrolling these recursions, one can express the final number of recovered individuals in closed form after a given number of cycles.
+
+In vectorized form, the dynamics across all hubs can be expressed as a nonlinear update function:
+\[
+\vec{X}(t+1) = F(\vec{X}(t))
+\]
+where $\vec{X}(t) = (S_h(t), I_h(t), R_h(t))_{h \in H}$. Since $F$ is deterministic and depends on known quantities, it is possible—under mild assumptions—to compute a Jacobian of $F$ and, if desired, linearize near a fixed point or derive analytical bounds on final epidemic size.
+
+
+
+% Contributions
+\section{Member Contributions}
+\subsection{Max Elinson}
+
+\subsection{Ethan Kharitonov}
+
+% Response to Questions From Presentation
+\section{Response to Questions From Presentation}
+
+\end{document}
