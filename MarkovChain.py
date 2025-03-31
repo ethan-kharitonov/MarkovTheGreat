@@ -9,4 +9,4 @@ class MarkovChain(ABC):
     def transition_probability_indices(self, i, j):
         pass
 
-    
+
